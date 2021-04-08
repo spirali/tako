@@ -35,6 +35,24 @@ pub fn on_new_worker(core: &mut Core, comm: &mut impl Comm, worker: Worker) {
     core.new_worker(worker);
 }
 
+pub fn on_cancel_tasks(core: &mut Core, comm: &mut impl Comm, task_ids: &[TaskId]) {
+    for task_id in task_ids {
+        log::debug!("Canceling task id={}", task_id);
+        if let Some(task_ref) = core.get_task_by_id(*task_id) {
+            let task = task_ref.get_mut();
+            match task.state {
+                TaskRuntimeState::Waiting(_) => { todo!() }
+                TaskRuntimeState::Assigned(_) => { todo!() }
+                TaskRuntimeState::Stealing(_, _) => { todo!() }
+                TaskRuntimeState::Running(_) => { todo!() }
+                TaskRuntimeState::Finished(_, _) => { todo!() }
+                TaskRuntimeState::Released => { unreachable!() }
+            }
+        } else {
+            log::debug!("Task is not here")
+        }
+    }
+}
 
 pub fn on_new_tasks(core: &mut Core, comm: &mut impl Comm, new_tasks: Vec<TaskRef>) {
     assert!(!new_tasks.is_empty());
