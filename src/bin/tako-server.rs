@@ -62,6 +62,7 @@ async fn main() {
         client_sender.clone(),
         opts.panic_on_worker_lost,
         opts.idle_timeout.map(Duration::from_secs),
+        None,
     )
     .await
     .unwrap();

@@ -7,6 +7,12 @@ use crate::Priority;
 use crate::{OutputId, TaskId, TaskTypeId, WorkerId};
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum ConnectionRegistration {
+    Worker(RegisterWorker),
+    Custom,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct RegisterWorker {
     pub configuration: WorkerConfiguration,
 }

@@ -11,7 +11,7 @@ use tokio::sync::Notify;
 use crate::messages::gateway::ToGatewayMessage;
 use crate::scheduler::state::scheduler_loop;
 use crate::server::comm::CommSenderRef;
-use crate::server::core::CoreRef;
+use crate::server::core::{CoreRef, CustomConnectionHandler};
 use std::rc::Rc;
 
 pub async fn server_start(
@@ -21,6 +21,7 @@ pub async fn server_start(
     client_sender: UnboundedSender<ToGatewayMessage>,
     panic_on_worker_lost: bool,
     idle_timeout: Option<Duration>,
+    custom_conn_handler: Option<CustomConnectionHandler>,
 ) -> crate::Result<(
     CoreRef,
     CommSenderRef,
@@ -39,7 +40,7 @@ pub async fn server_start(
         client_sender,
         panic_on_worker_lost,
     );
-    let core_ref = CoreRef::new(listener_port, secret_key, idle_timeout);
+    let core_ref = CoreRef::new(listener_port, secret_key, idle_timeout, custom_conn_handler);
     //let scheduler = observe_scheduler(core_ref.clone(), comm_ref.clone(), scheduler_receiver);
     let connections =
         crate::server::rpc::connection_initiator(listener, core_ref.clone(), comm_ref.clone());
