@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use bstr::BString;
 use serde::{Deserialize, Serialize};
 
 use crate::common::resources::ResourceDescriptor;
 use crate::common::Map;
 use crate::TaskTypeId;
-use bstr::BString;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskFailInfo {

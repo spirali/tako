@@ -277,7 +277,7 @@ impl Task {
     #[inline]
     pub fn data_info(&self) -> Option<&FinishInfo> {
         match &self.state {
-            TaskRuntimeState::Finished(finfo) => Some(&finfo),
+            TaskRuntimeState::Finished(finfo) => Some(finfo),
             _ => None,
         }
     }

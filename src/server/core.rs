@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use std::time::Duration;
+
 use orion::aead::SecretKey;
 
 use crate::common::error::DsError;
@@ -11,8 +14,6 @@ use crate::server::task::{Task, TaskRef, TaskRuntimeState};
 use crate::server::worker::Worker;
 use crate::server::worker_load::WorkerResources;
 use crate::{TaskId, WorkerId};
-use std::sync::Arc;
-use std::time::Duration;
 
 pub type CustomConnectionHandler = Box<dyn Fn(ConnectionDescriptor)>;
 
@@ -345,20 +346,20 @@ impl Core {
                         assert!(t.get().is_waiting());
                     }
                     assert_eq!(winfo.unfinished_deps, count);
-                    worker_check(self, &task_ref, 0);
+                    worker_check(self, task_ref, 0);
                     assert!(task.is_fresh());
                 }
 
                 TaskRuntimeState::Assigned(wid) | TaskRuntimeState::Running(wid) => {
                     assert!(!task.is_fresh());
                     fw_check(&task);
-                    worker_check(self, &task_ref, *wid);
+                    worker_check(self, task_ref, *wid);
                 }
 
                 TaskRuntimeState::Stealing(_, target) => {
                     assert!(!task.is_fresh());
                     fw_check(&task);
-                    worker_check(self, &task_ref, target.unwrap_or(0));
+                    worker_check(self, task_ref, target.unwrap_or(0));
                 }
 
                 TaskRuntimeState::Finished(_) => {

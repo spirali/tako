@@ -1,3 +1,5 @@
+use std::fmt;
+
 use tokio::sync::oneshot;
 
 use crate::common::resources::NumOfCpus;
@@ -7,7 +9,6 @@ use crate::messages::common::WorkerConfiguration;
 use crate::messages::worker::WorkerOverview;
 use crate::server::task::{Task, TaskRef};
 use crate::server::worker_load::{ResourceRequestLowerBound, WorkerLoad, WorkerResources};
-use std::fmt;
 
 pub type WorkerId = u64;
 

@@ -1,19 +1,15 @@
 use std::fs::File;
-use std::process::Stdio;
-
-use tokio::process::Command;
-use tokio::sync::oneshot;
-
-use crate::common::error::DsError;
-use crate::common::resources::ResourceAllocation;
-use crate::messages::common::{ProgramDefinition, StdioDef, TaskFailInfo};
-use crate::worker::state::WorkerStateRef;
-use crate::worker::task::{Task, TaskRef};
-use bstr::ByteSlice;
-use futures::future::BoxFuture;
 use std::future::Future;
 use std::path::PathBuf;
 use std::pin::Pin;
+use std::process::Stdio;
+
+use bstr::ByteSlice;
+use tokio::process::Command;
+
+use crate::common::resources::ResourceAllocation;
+use crate::messages::common::{ProgramDefinition, StdioDef};
+use crate::worker::task::TaskRef;
 
 pub type InnerTaskLauncher =
     Box<dyn Fn(&TaskRef) -> Pin<Box<dyn Future<Output = crate::Result<()>> + 'static>>>;

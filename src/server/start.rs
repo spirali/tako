@@ -1,5 +1,6 @@
 use std::future::Future;
 use std::net::SocketAddr;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -12,7 +13,6 @@ use crate::messages::gateway::ToGatewayMessage;
 use crate::scheduler::state::scheduler_loop;
 use crate::server::comm::CommSenderRef;
 use crate::server::core::{CoreRef, CustomConnectionHandler};
-use std::rc::Rc;
 
 pub async fn server_start(
     listen_address: SocketAddr,

@@ -1,9 +1,10 @@
+use std::cmp::Reverse;
+
 use crate::common::resources::{ResourceAllocation, ResourceDescriptor, ResourceRequest};
 use crate::common::Map;
 use crate::worker::pool::ResourcePool;
 use crate::worker::task::TaskRef;
 use crate::PriorityTuple;
-use std::cmp::Reverse;
 
 pub struct ResourceWaitQueue {
     queues: Map<ResourceRequest, priority_queue::PriorityQueue<TaskRef, PriorityTuple>>,

@@ -7,9 +7,9 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use tokio::task::LocalSet;
 
-use futures::future::BoxFuture;
 use orion::kdf::SecretKey;
 use std::future::Future;
+use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
 use tako::common::error::DsError;
@@ -17,11 +17,10 @@ use tako::common::resources::ResourceDescriptor;
 use tako::common::secret::read_secret_file;
 use tako::common::setup::setup_logging;
 use tako::messages::common::{ProgramDefinition, WorkerConfiguration};
-use tako::worker::launcher::{command_from_definitions, pin_program};
+use tako::worker::launcher::command_from_definitions;
 use tako::worker::rpc::run_worker;
-use tako::worker::task::{Task, TaskRef};
+use tako::worker::task::TaskRef;
 use tokio::net::lookup_host;
-use std::net::SocketAddr;
 
 #[derive(Clap)]
 #[clap(version = "1.0")]
@@ -173,10 +172,11 @@ async fn main() -> tako::Result<()> {
     local_set
         .run_until(async move {
             match lookup_host(&server_address).await {
-                Ok(mut addrs) => { let address = addrs.next()
-                .expect("Invalid server address");
-                worker_main(address, configuration, secret_key).await },
-                Err(e) => Result::Err(e.into())
+                Ok(mut addrs) => {
+                    let address = addrs.next().expect("Invalid server address");
+                    worker_main(address, configuration, secret_key).await
+                }
+                Err(e) => Result::Err(e.into()),
             }
         })
         .await?;

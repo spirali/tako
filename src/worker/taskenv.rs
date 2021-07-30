@@ -1,15 +1,15 @@
 use bytes::Bytes;
+use tokio::sync::oneshot;
 use tokio::sync::oneshot::Sender;
 
 use crate::common::data::SerializationType;
 use crate::messages::common::TaskFailInfo;
 use crate::worker::data::DataObject;
-use crate::worker::state::{WorkerState, WorkerStateRef};
+use crate::worker::state::WorkerState;
 use crate::worker::subworker::{choose_subworker, SubworkerRef};
 use crate::worker::task::Task;
 use crate::worker::task::TaskRef;
 use crate::TaskId;
-use tokio::sync::oneshot;
 
 pub enum TaskEnv {
     Subworker(SubworkerRef),

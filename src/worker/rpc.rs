@@ -1,4 +1,6 @@
+use std::future::Future;
 use std::net::{Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 use std::time::Duration;
 
 use bytes::{Bytes, BytesMut};
@@ -6,7 +8,6 @@ use futures::stream::FuturesUnordered;
 use futures::{SinkExt, Stream, StreamExt};
 use orion::aead::streaming::StreamOpener;
 use orion::aead::SecretKey;
-use tokio::net::lookup_host;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::LocalSet;
 use tokio::time::sleep;
@@ -33,8 +34,6 @@ use crate::worker::state::WorkerStateRef;
 use crate::worker::task::TaskRef;
 use crate::Priority;
 use crate::PriorityTuple;
-use std::future::Future;
-use std::sync::Arc;
 
 async fn start_listener() -> crate::Result<(TcpListener, String)> {
     let address = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
@@ -78,7 +77,7 @@ pub async fn connect_to_server_and_authenticate(
 ) -> crate::Result<ConnectionDescriptor> {
     let (stream, address) = connect_to_server(server_address).await?;
     let (mut writer, mut reader) = make_protocol_builder().new_framed(stream).split();
-    let (mut sealer, mut opener) = do_authentication(
+    let (sealer, opener) = do_authentication(
         0,
         "worker".to_string(),
         "server".to_string(),

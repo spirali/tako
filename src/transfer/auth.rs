@@ -1,14 +1,16 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use bincode::{DefaultOptions, Options};
 use bytes::Bytes;
+use futures::{Sink, SinkExt};
 use futures::stream::{SplitSink, SplitStream};
 use futures::StreamExt;
-use futures::{Sink, SinkExt};
 use orion::aead::streaming::{Nonce, StreamOpener, StreamSealer, StreamTag};
 use orion::kdf::SecretKey;
 use orion::util::secure_rand_bytes;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::time::timeout;
@@ -19,8 +21,6 @@ use crate::messages::auth::{
     AuthenticationError, AuthenticationMode, AuthenticationRequest, AuthenticationResponse,
     Challenge, EncryptionResponse,
 };
-use bincode::{DefaultOptions, Options};
-use serde::Deserialize;
 
 const CHALLENGE_LENGTH: usize = 16;
 
@@ -285,11 +285,12 @@ pub async fn forward_queue_to_sealed_sink<E, S: Sink<Bytes, Error = E> + Unpin>(
 
 #[cfg(test)]
 mod tests {
-    use crate::messages::auth::AuthenticationResponse;
-
-    use crate::transfer::auth::Authenticator;
-    use orion::kdf::SecretKey;
     use std::sync::Arc;
+
+    use orion::kdf::SecretKey;
+
+    use crate::messages::auth::AuthenticationResponse;
+    use crate::transfer::auth::Authenticator;
 
     #[test]
     fn test_no_auth() {

@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::sync::Arc;
 
 use bytes::{Bytes, BytesMut};
 use hashbrown::HashMap;
@@ -26,7 +27,6 @@ use crate::worker::subworker::{SubworkerId, SubworkerRef};
 use crate::worker::task::{TaskRef, TaskState};
 use crate::PriorityTuple;
 use crate::TaskId;
-use std::sync::Arc;
 
 pub type WorkerStateRef = WrappedRcRefCell<WorkerState>;
 

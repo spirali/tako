@@ -2,10 +2,12 @@ use core::time::Duration;
 use std::time::Instant;
 
 use bytes::{Bytes, BytesMut};
+use futures::stream::{SplitSink, SplitStream};
 use futures::{Stream, StreamExt};
 use orion::aead::streaming::{StreamOpener, StreamSealer};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::timeout;
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 use crate::common::error::DsError;
 use crate::messages::gateway::LostWorkerReason;
@@ -24,8 +26,6 @@ use crate::transfer::auth::{
 };
 use crate::transfer::transport::make_protocol_builder;
 use crate::WorkerId;
-use futures::stream::{SplitSink, SplitStream};
-use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 pub struct ConnectionDescriptor {
     pub address: std::net::SocketAddr,
@@ -138,9 +138,9 @@ async fn worker_rpc_loop(
     let mut configuration = msg.configuration;
     // Update idle_timeout configuration from server default
     if configuration.idle_timeout.is_none() {
-        configuration.idle_timeout = core_ref.get().idle_timeout().clone();
+        configuration.idle_timeout = *core_ref.get().idle_timeout();
     }
-    let idle_timeout = configuration.idle_timeout.clone();
+    let idle_timeout = configuration.idle_timeout;
 
     let (queue_sender, queue_receiver) = tokio::sync::mpsc::unbounded_channel::<Bytes>();
 

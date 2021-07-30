@@ -464,7 +464,7 @@ pub fn on_task_error(
             let mut task = task_ref.get_mut();
             log::debug!("Task={} canceled because of failed dependency", task.id);
             assert!(task.is_waiting());
-            unregister_as_consumer(core, comm, &mut task, &task_ref);
+            unregister_as_consumer(core, comm, &mut task, task_ref);
         }
 
         assert!(matches!(
@@ -548,7 +548,7 @@ pub fn on_cancel_tasks(
 
     for task_ref in &task_refs {
         let mut task = task_ref.get_mut();
-        unregister_as_consumer(core, comm, &mut task, &task_ref);
+        unregister_as_consumer(core, comm, &mut task, task_ref);
     }
 
     for task_ref in &task_refs {
@@ -644,7 +644,7 @@ fn unregister_as_consumer(
     for tr in &task.inputs {
         //let tr = core.get_task_by_id_or_panic(*input_id).clone();
         let mut t = tr.get_mut();
-        assert!(t.remove_consumer(&task_ref));
+        assert!(t.remove_consumer(task_ref));
         remove_task_if_possible(core, comm, &mut t);
     }
 }
@@ -676,6 +676,7 @@ fn remove_task_if_possible(core: &mut Core, comm: &mut impl Comm, task: &mut Tas
 mod tests {
     use std::time::Duration;
 
+    use crate::common::resources::ResourceDescriptor;
     use crate::messages::common::WorkerConfiguration;
     use crate::messages::worker::ComputeTaskMsg;
     use crate::scheduler::state::tests::create_test_scheduler;
@@ -686,7 +687,6 @@ mod tests {
     };
 
     use super::*;
-    use crate::common::resources::ResourceDescriptor;
 
     /*use crate::test_util::{
         create_test_comm, create_test_workers, finish_on_worker, sorted_vec,
