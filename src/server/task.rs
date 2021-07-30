@@ -4,8 +4,8 @@ use std::fmt;
 use crate::common::resources::ResourceRequest;
 use crate::common::{Map, Set, WrappedRcRefCell};
 use crate::messages::worker::{ComputeTaskMsg, ToWorkerMessage};
-use crate::Priority;
 use crate::WorkerId;
+use crate::{InstanceId, Priority};
 use crate::{OutputId, TaskId, TaskTypeId};
 
 #[derive(Debug)]
@@ -70,6 +70,7 @@ pub struct Task {
 
     pub resources: ResourceRequest,
 
+    pub instance_id: InstanceId,
     pub type_id: TaskTypeId,
     pub spec: Vec<u8>, // Serialized TaskSpec
 
@@ -202,7 +203,7 @@ impl Task {
         result
     }
 
-    pub fn make_compute_message(&self) -> ToWorkerMessage {
+    pub fn make_compute_message(&mut self) -> ToWorkerMessage {
         let dep_info: Vec<_> = self
             .inputs
             .iter()
@@ -214,8 +215,12 @@ impl Task {
             })
             .collect();
 
+        let instance_id = self.instance_id;
+        self.instance_id += 1;
+
         ToWorkerMessage::ComputeTask(ComputeTaskMsg {
             id: self.id,
+            instance_id,
             type_id: self.type_id,
             n_outputs: self.n_outputs,
             dep_info,
@@ -374,6 +379,7 @@ impl TaskRef {
             resources,
             state: TaskRuntimeState::Waiting(WaitingInfo { unfinished_deps: 0 }),
             consumers: Default::default(),
+            instance_id: 0,
         })
     }
 }

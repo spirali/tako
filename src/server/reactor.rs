@@ -327,7 +327,7 @@ pub fn on_steal_response(
         match task_ref {
             Some(task_ref) => {
                 let new_state = {
-                    let task = task_ref.get();
+                    let mut task = task_ref.get_mut();
                     if task.is_done_or_running() {
                         log::debug!("Received trace response for finished task={}", task_id);
                         trace_worker_steal_response(task.id, worker_id, 0, "done");
