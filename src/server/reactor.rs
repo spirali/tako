@@ -54,6 +54,7 @@ pub fn on_remove_worker(
             TaskRuntimeState::Assigned(w_id) | TaskRuntimeState::Running(w_id) => {
                 if *w_id == worker_id {
                     log::debug!("Removing task task={} from lost worker", task_id);
+                    task.increment_instance_id();
                     task.set_fresh_flag(true);
                     ready_to_assign.push(task_ref.clone());
                     if task.is_running() {
@@ -71,6 +72,7 @@ pub fn on_remove_worker(
                     if let Some(to_id) = to_id {
                         removes.push((*to_id, task_ref.clone()));
                     }
+                    task.increment_instance_id();
                     task.set_fresh_flag(true);
                     ready_to_assign.push(task_ref.clone());
                     TaskRuntimeState::Waiting(WaitingInfo { unfinished_deps: 0 })
@@ -327,7 +329,7 @@ pub fn on_steal_response(
         match task_ref {
             Some(task_ref) => {
                 let new_state = {
-                    let mut task = task_ref.get_mut();
+                    let task = task_ref.get();
                     if task.is_done_or_running() {
                         log::debug!("Received trace response for finished task={}", task_id);
                         trace_worker_steal_response(task.id, worker_id, 0, "done");
@@ -1489,6 +1491,8 @@ mod tests {
         start_stealing(&mut core, 41, 101);
 
         assert!(core.get_task_by_id_or_panic(12).get().is_running());
+        assert_eq!(core.get_task_by_id_or_panic(12).get().instance_id, 0);
+
 
         assert!(!core.get_task_by_id_or_panic(11).get().is_fresh());
         assert!(!core.get_task_by_id_or_panic(12).get().is_fresh());
@@ -1503,6 +1507,7 @@ mod tests {
         assert_eq!(core.take_ready_to_assign().len(), 3);
         assert!(core.get_task_by_id_or_panic(11).get().is_ready());
         assert!(core.get_task_by_id_or_panic(12).get().is_ready());
+        assert_eq!(core.get_task_by_id_or_panic(12).get().instance_id, 1);
         assert!(core.get_task_by_id_or_panic(40).get().is_ready());
         assert!(core.get_task_by_id_or_panic(11).get().is_fresh());
         assert!(core.get_task_by_id_or_panic(12).get().is_fresh());

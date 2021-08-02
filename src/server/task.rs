@@ -203,7 +203,11 @@ impl Task {
         result
     }
 
-    pub fn make_compute_message(&mut self) -> ToWorkerMessage {
+    pub fn increment_instance_id(&mut self) {
+        self.instance_id += 1;
+    }
+
+    pub fn make_compute_message(&self) -> ToWorkerMessage {
         let dep_info: Vec<_> = self
             .inputs
             .iter()
@@ -215,12 +219,9 @@ impl Task {
             })
             .collect();
 
-        let instance_id = self.instance_id;
-        self.instance_id += 1;
-
         ToWorkerMessage::ComputeTask(ComputeTaskMsg {
             id: self.id,
-            instance_id,
+            instance_id: self.instance_id,
             type_id: self.type_id,
             n_outputs: self.n_outputs,
             dep_info,
