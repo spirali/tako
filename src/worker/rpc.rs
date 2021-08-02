@@ -17,7 +17,7 @@ use crate::common::resources::ResourceAllocation;
 use crate::messages::common::WorkerConfiguration;
 use crate::messages::worker::{
     ConnectionRegistration, FromWorkerMessage, RegisterWorker, StealResponseMsg, ToWorkerMessage,
-    WorkerOverview, WorkerRegistrationResponse,
+    WorkerHwStateMessage, WorkerOverview, WorkerRegistrationResponse,
 };
 use crate::server::rpc::ConnectionDescriptor;
 use crate::transfer::auth::{
@@ -27,6 +27,7 @@ use crate::transfer::fetch::fetch_data;
 use crate::transfer::transport::{connect_to_worker, make_protocol_builder};
 use crate::transfer::DataConnection;
 use crate::worker::data::{DataObjectRef, DataObjectState};
+use crate::worker::hwmonitor::HwSampler;
 use crate::worker::launcher::InnerTaskLauncher;
 use crate::worker::reactor::assign_task;
 use crate::worker::state::WorkerStateRef;
@@ -122,6 +123,7 @@ pub async fn run_worker(
     let (download_sender, download_reader) =
         tokio::sync::mpsc::unbounded_channel::<(DataObjectRef, (Priority, Priority))>();
     let heartbeat_interval = configuration.heartbeat_interval;
+    let hw_state_poll_interval = configuration.hw_state_poll_interval;
 
     let (worker_id, state) = {
         match timeout(Duration::from_secs(15), receiver.next()).await {
@@ -148,6 +150,7 @@ pub async fn run_worker(
 
     let state_ref2 = state.clone();
     let state_ref3 = state.clone();
+    let state_ref4 = state.clone();
 
     let try_start_tasks = async move {
         let notify = state_ref2.get().start_task_notify.clone();
@@ -181,6 +184,7 @@ pub async fn run_worker(
             log::debug!("Heartbeat sent");
         }
     };
+    let sampler = HwSampler::init();
 
     /*log::info!("Starting {} subworkers", ncpus);
     let (subworkers, sw_processes) =
@@ -210,12 +214,53 @@ pub async fn run_worker(
                 unreachable!()
             }
             _ = heartbeat => { unreachable!() }
+            Some(_) = update_hw_state(state_ref4, hw_state_poll_interval, sampler)  => { unreachable!() }
         }
     }))
 }
 
 const MAX_RUNNING_DOWNLOADS: usize = 32;
 const MAX_ATTEMPTS: u32 = 8;
+
+/// updates hardware_state in worker/state, if hw_poll_interval is None,
+/// the hardware_state stays default
+async fn update_hw_state(
+    state_ref: WorkerStateRef,
+    hw_poll_interval: Option<Duration>,
+    mut hw_sampler: Result<HwSampler, psutil::Error>,
+) -> Option<()> {
+    match hw_poll_interval {
+        Some(hw_poll_interval) => {
+            let mut poll_interval = tokio::time::interval(hw_poll_interval);
+            loop {
+                poll_interval.tick().await;
+                match &mut hw_sampler {
+                    Ok(sampler) => {
+                        let hw_state = sampler.fetch_hw_state();
+                        match hw_state {
+                            Ok(new_state) => {
+                                state_ref.get_mut().hardware_state = new_state;
+                            }
+                            Err(error) => {
+                                state_ref
+                                    .get_mut()
+                                    .hardware_state
+                                    .worker_cpu_usage
+                                    .cpu_per_core_percent_usage
+                                    .clear();
+                                log::warn!("Error reading hw state! {:?}", error);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        log::warn!("Error initializing Hw Sampler on worker! {:?}", err)
+                    }
+                }
+            }
+        }
+        None => None,
+    }
+}
 
 async fn download_data(state_ref: WorkerStateRef, data_ref: DataObjectRef) {
     for attempt in 0..MAX_ATTEMPTS {
@@ -363,7 +408,7 @@ async fn worker_message_loop(
             ToWorkerMessage::RegisterSubworker(sw_def) => {
                 state.subworker_definitions.insert(sw_def.id, sw_def);
             }
-            ToWorkerMessage::GetOverview => {
+            ToWorkerMessage::GetOverview(overview_request) => {
                 let message = FromWorkerMessage::Overview(WorkerOverview {
                     id: state.worker_id,
                     running_tasks: state
@@ -378,6 +423,13 @@ async fn worker_message_loop(
                         })
                         .collect(),
                     placed_data: state.data_objects.keys().copied().collect(),
+
+                    hw_state: match overview_request.enable_hw_overview {
+                        true => Some(WorkerHwStateMessage {
+                            worker_hw_state: state.hardware_state.clone(),
+                        }),
+                        false => None,
+                    },
                 });
                 state.send_message_to_server(message);
             }
