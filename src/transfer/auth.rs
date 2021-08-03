@@ -3,9 +3,9 @@ use std::time::Duration;
 
 use bincode::{DefaultOptions, Options};
 use bytes::Bytes;
-use futures::{Sink, SinkExt};
 use futures::stream::{SplitSink, SplitStream};
 use futures::StreamExt;
+use futures::{Sink, SinkExt};
 use orion::aead::streaming::{Nonce, StreamOpener, StreamSealer, StreamTag};
 use orion::kdf::SecretKey;
 use orion::util::secure_rand_bytes;
@@ -105,10 +105,10 @@ impl Authenticator {
                 }
 
                 let (mut sealer, nonce) =
-                    StreamSealer::new(&key).map_err(|_| "Creating sealer failed")?;
+                    StreamSealer::new(key).map_err(|_| "Creating sealer failed")?;
 
                 let mut response = Vec::new();
-                response.extend_from_slice(&self.my_role.as_bytes());
+                response.extend_from_slice(self.my_role.as_bytes());
                 response.extend_from_slice(&msg.challenge);
 
                 let challenge_response = sealer
@@ -157,7 +157,7 @@ impl Authenticator {
                     .map_err(|_| DsError::GenericError("Cannot verify challenge".to_string()))?;
 
                 let mut expected_response = Vec::new();
-                expected_response.extend_from_slice(&self.peer_role.as_bytes());
+                expected_response.extend_from_slice(self.peer_role.as_bytes());
                 expected_response.extend_from_slice(&self.challenge);
 
                 if tag != StreamTag::Message || opened_challenge != expected_response {
@@ -229,12 +229,12 @@ where
 {
     if let Some(opener) = opener {
         let (msg, tag) = opener
-            .open_chunk(&message_data)
+            .open_chunk(message_data)
             .map_err(|_| DsError::GenericError("Cannot decrypt message".to_string()))?;
         assert_eq!(tag, StreamTag::Message);
         Ok(deserialize(&msg)?)
     } else {
-        Ok(deserialize(&message_data)?)
+        Ok(deserialize(message_data)?)
     }
 }
 

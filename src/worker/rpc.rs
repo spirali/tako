@@ -236,7 +236,7 @@ async fn download_data(state_ref: WorkerStateRef, data_ref: DataObjectRef) {
                 // Task that requested data was removed (because of work stealing)
                 return;
             }
-            let worker_id: WorkerId = *state_ref.get_mut().random_choice(&workers);
+            let worker_id: WorkerId = *state_ref.get_mut().random_choice(workers);
             (worker_id, data_obj.id)
         };
 
@@ -295,11 +295,8 @@ async fn worker_data_downloader(
             s = stream.recv() => {
                let (data_ref, priority) = s.unwrap();
                queue.push_increase(data_ref, priority);
-               loop {
-                    match stream.recv().await {
-                        Some((data_ref, priority)) => queue.push_increase(data_ref, priority),
-                        None => break,
-                    };
+               while let Some((data_ref, priority)) = stream.recv().await {
+                    queue.push_increase(data_ref, priority);
                }
             },
             _ = running.next(), if !running.is_empty() => {}

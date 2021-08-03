@@ -30,7 +30,7 @@ impl TaskEnv {
     #[inline]
     pub fn is_uploaded(&self, data_obj: &DataObject) -> bool {
         match self {
-            TaskEnv::Subworker(subworker_ref) => data_obj.is_in_subworker(&subworker_ref),
+            TaskEnv::Subworker(subworker_ref) => data_obj.is_in_subworker(subworker_ref),
             TaskEnv::Inner(_) => true,
             TaskEnv::Invalid => {
                 unreachable!()
@@ -41,7 +41,7 @@ impl TaskEnv {
     #[inline]
     pub fn get_subworker(&self) -> Option<&SubworkerRef> {
         match self {
-            TaskEnv::Subworker(sw_ref) => Some(&sw_ref),
+            TaskEnv::Subworker(sw_ref) => Some(sw_ref),
             TaskEnv::Inner(_) => None,
             TaskEnv::Invalid => {
                 unreachable!()

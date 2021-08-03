@@ -397,6 +397,7 @@ impl WorkerState {
 }
 
 impl WorkerStateRef {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         worker_id: WorkerId,
         configuration: WorkerConfiguration,

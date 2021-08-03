@@ -1493,7 +1493,6 @@ mod tests {
         assert!(core.get_task_by_id_or_panic(12).get().is_running());
         assert_eq!(core.get_task_by_id_or_panic(12).get().instance_id, 0);
 
-
         assert!(!core.get_task_by_id_or_panic(11).get().is_fresh());
         assert!(!core.get_task_by_id_or_panic(12).get().is_fresh());
         assert!(!core.get_task_by_id_or_panic(40).get().is_fresh());

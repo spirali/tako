@@ -68,7 +68,7 @@ impl Worker {
     }
 
     pub fn remove_task(&mut self, task: &Task, task_ref: &TaskRef) {
-        assert!(self.tasks.remove(&task_ref));
+        assert!(self.tasks.remove(task_ref));
         self.load.remove_request(&task.resources, &self.resources);
     }
 
@@ -131,7 +131,7 @@ impl Worker {
     }
 
     pub fn is_capable_to_run(&self, request: &ResourceRequest) -> bool {
-        self.resources.is_capable_to_run(&request)
+        self.resources.is_capable_to_run(request)
     }
 
     pub fn set_stopping_flag(&mut self, value: bool) {
