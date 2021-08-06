@@ -127,7 +127,13 @@ class TakoEnv(Env):
         return env
 
     def start_worker(
-        self, ncpus, port=None, heartbeat=None, secret_file=None, nsockets=None, enable_hwpoll=False,
+        self,
+        ncpus,
+        port=None,
+        heartbeat=None,
+        secret_file=None,
+        nsockets=None,
+        hw_interval=None,
     ):
         port = port or self.default_listen_port
         worker_id = self.id_counter
@@ -151,8 +157,8 @@ class TakoEnv(Env):
             "--work-dir",
             work_dir,
         ]
-        if enable_hwpoll:
-            args.extend(["--hw-state-poll-interval", "100"])
+        if hw_interval is not None:
+            args.extend(["--hw-state-poll-interval", str(hw_interval)])
 
         if nsockets is not None:
             args.append("--sockets")
@@ -207,15 +213,15 @@ class TakoEnv(Env):
         return self.server
 
     def start(
-            self,
-            workers=(),
-            port=None,
-            worker_start_delay=None,
-            panic_on_worker_lost=True,
-            heartbeat=None,
-            secret_file=None,
-            idle_timeout=None,
-            enable_worker_hwpoll=False,
+        self,
+        workers=(),
+        port=None,
+        worker_start_delay=None,
+        panic_on_worker_lost=True,
+        heartbeat=None,
+        secret_file=None,
+        idle_timeout=None,
+        hw_interval=None,
     ):
         print("Starting tako env in ", self.work_path)
 
@@ -239,7 +245,9 @@ class TakoEnv(Env):
                 raise Exception("Server not started after 5")
 
         for cpus in workers:
-            self.start_worker(cpus, port=port, heartbeat=heartbeat, enable_hwpoll=enable_worker_hwpoll)
+            self.start_worker(
+                cpus, port=port, heartbeat=heartbeat, hw_interval=hw_interval
+            )
             if worker_start_delay:
                 time.sleep(worker_start_delay)
 
