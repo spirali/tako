@@ -114,7 +114,7 @@ pub struct StealResponseMsg {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct WorkerHwStateMessage {
-    pub worker_hw_state: WorkerHwState,
+    pub state: WorkerHwState,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

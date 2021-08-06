@@ -9,7 +9,7 @@ def test_hw_monitoring(tako_env):
     time.sleep(0.2)
 
     overview = session.overview()
-    cpu_percent_vec = overview["worker_overviews"][0]["hw_state"]["worker_hw_state"]["worker_cpu_usage"][
+    cpu_percent_vec = overview["worker_overviews"][0]["hw_state"]["state"]["worker_cpu_usage"][
         "cpu_per_core_percent_usage"]
 
     cpu_count = multiprocessing.cpu_count()

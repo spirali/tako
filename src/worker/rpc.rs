@@ -34,6 +34,7 @@ use crate::worker::state::WorkerStateRef;
 use crate::worker::task::TaskRef;
 use crate::PriorityTuple;
 use crate::{Priority, WorkerId};
+use futures::future::Either;
 
 async fn start_listener() -> crate::Result<(TcpListener, String)> {
     let address = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0);
@@ -150,7 +151,6 @@ pub async fn run_worker(
 
     let state_ref2 = state.clone();
     let state_ref3 = state.clone();
-    let state_ref4 = state.clone();
 
     let try_start_tasks = async move {
         let notify = state_ref2.get().start_task_notify.clone();
@@ -172,9 +172,6 @@ pub async fn run_worker(
 
     let heartbeat = async move {
         let mut interval = tokio::time::interval(heartbeat_interval);
-        /*let data: Bytes = serialize(&FromWorkerMessage::Heartbeat)
-        .unwrap()
-        .into();*/
 
         loop {
             interval.tick().await;
@@ -184,14 +181,14 @@ pub async fn run_worker(
             log::debug!("Heartbeat sent");
         }
     };
-    let sampler = HwSampler::init();
 
-    /*log::info!("Starting {} subworkers", ncpus);
-    let (subworkers, sw_processes) =
-        start_subworkers(&state, subworker_paths, "python3", ncpus).await?;
-    log::debug!("Subworkers started");
-
-    state.get_mut().set_subworkers(subworkers);*/
+    let hw_polling_process = match hw_state_poll_interval {
+        Some(interval) => {
+            let sampler = HwSampler::init()?;
+            Either::Right(update_hw_state(state.clone(), interval, sampler))
+        }
+        None => Either::Left(futures::future::pending()),
+    };
 
     Ok(((worker_id, configuration), async move {
         tokio::select! {
@@ -207,14 +204,11 @@ pub async fn run_worker(
             _result = taskset.run_until(connection_initiator(listener, state.clone())) => {
                 panic!("Taskset failed");
             }
-            /*idx = sw_processes => {
-                panic!("Subworker process {} failed", idx);
-            }*/
             _ = worker_data_downloader(state, download_reader) => {
                 unreachable!()
             }
             _ = heartbeat => { unreachable!() }
-            Some(_) = update_hw_state(state_ref4, hw_state_poll_interval, sampler)  => { unreachable!() }
+            _ = hw_polling_process => { unreachable!() }
         }
     }))
 }
@@ -222,43 +216,29 @@ pub async fn run_worker(
 const MAX_RUNNING_DOWNLOADS: usize = 32;
 const MAX_ATTEMPTS: u32 = 8;
 
-/// updates hardware_state in worker/state, if hw_poll_interval is None,
-/// the hardware_state stays default
 async fn update_hw_state(
     state_ref: WorkerStateRef,
-    hw_poll_interval: Option<Duration>,
-    mut hw_sampler: Result<HwSampler, psutil::Error>,
-) -> Option<()> {
-    match hw_poll_interval {
-        Some(hw_poll_interval) => {
-            let mut poll_interval = tokio::time::interval(hw_poll_interval);
-            loop {
-                poll_interval.tick().await;
-                match &mut hw_sampler {
-                    Ok(sampler) => {
-                        let hw_state = sampler.fetch_hw_state();
-                        match hw_state {
-                            Ok(new_state) => {
-                                state_ref.get_mut().hardware_state = new_state;
-                            }
-                            Err(error) => {
-                                state_ref
-                                    .get_mut()
-                                    .hardware_state
-                                    .worker_cpu_usage
-                                    .cpu_per_core_percent_usage
-                                    .clear();
-                                log::warn!("Error reading hw state! {:?}", error);
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        log::warn!("Error initializing Hw Sampler on worker! {:?}", err)
-                    }
-                }
+    hw_poll_interval: Duration,
+    mut sampler: HwSampler,
+) {
+    let mut poll_interval = tokio::time::interval(hw_poll_interval);
+    loop {
+        poll_interval.tick().await;
+        let hw_state = sampler.fetch_hw_state();
+        match hw_state {
+            Ok(new_state) => {
+                state_ref.get_mut().hardware_state = new_state;
+            }
+            Err(error) => {
+                state_ref
+                    .get_mut()
+                    .hardware_state
+                    .worker_cpu_usage
+                    .cpu_per_core_percent_usage
+                    .clear();
+                log::warn!("Error reading hw state! {:?}", error);
             }
         }
-        None => None,
     }
 }
 
@@ -426,7 +406,7 @@ async fn worker_message_loop(
 
                     hw_state: match overview_request.enable_hw_overview {
                         true => Some(WorkerHwStateMessage {
-                            worker_hw_state: state.hardware_state.clone(),
+                            state: state.hardware_state.clone(),
                         }),
                         false => None,
                     },

@@ -19,14 +19,12 @@ pub struct WorkerHwState {
 }
 
 impl HwSampler {
-    ///Initializes the CpuPercentCollector and the NetworkIoCountersCollector.
     pub fn init() -> Result<Self, psutil::Error> {
         Ok(Self {
-            cpu_percent_collector: CpuPercentCollector::new()?, //Doesn't derive Default
+            cpu_percent_collector: CpuPercentCollector::new()?,
             net_io_counters_collector: Default::default(),
         })
     }
-    ///Fetches and Returns the latest WorkerHwState
     pub fn fetch_hw_state(&mut self) -> Result<WorkerHwState, psutil::Error> {
         let cpu_usage = self.cpu_percent_collector.cpu_percent_percpu()?;
         let memory_usage = psutil::memory::virtual_memory()?;
