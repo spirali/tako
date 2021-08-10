@@ -1,33 +1,22 @@
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::common::resources::ResourceRequest;
-use crate::messages::common::{SubworkerDefinition, TaskFailInfo, WorkerConfiguration};
+use crate::messages::common::{
+    SubworkerDefinition, TaskConfiguration, TaskFailInfo, WorkerConfiguration,
+};
 use crate::messages::worker::WorkerOverview;
 use crate::{OutputId, Priority, TaskId, TaskTypeId, WorkerId};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct TaskDef {
     pub id: TaskId,
-
-    pub type_id: TaskTypeId,
-
-    #[serde(default)]
-    pub n_outputs: OutputId,
-
-    #[serde(with = "serde_bytes")]
-    pub body: Vec<u8>,
+    pub conf: TaskConfiguration,
 
     #[serde(default)]
     pub keep: bool,
 
     #[serde(default)]
     pub observe: bool,
-
-    #[serde(default)]
-    pub resources: ResourceRequest,
-
-    #[serde(default)]
-    pub priority: Priority,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

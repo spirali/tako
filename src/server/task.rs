@@ -3,6 +3,7 @@ use std::fmt;
 
 use crate::common::resources::ResourceRequest;
 use crate::common::{Map, Set, WrappedRcRefCell};
+use crate::messages::common::TaskConfiguration;
 use crate::messages::worker::{ComputeTaskMsg, ToWorkerMessage};
 use crate::WorkerId;
 use crate::{InstanceId, Priority};
@@ -66,15 +67,9 @@ pub struct Task {
 
     pub flags: TaskFlags,
 
-    pub n_outputs: OutputId,
-
-    pub resources: ResourceRequest,
+    pub configuration: TaskConfiguration,
 
     pub instance_id: InstanceId,
-    pub type_id: TaskTypeId,
-    pub spec: Vec<u8>, // Serialized TaskSpec
-
-    pub user_priority: Priority,
     pub scheduler_priority: Priority,
 }
 
@@ -354,30 +349,21 @@ impl TaskRef {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: TaskId,
-        type_id: TaskTypeId,
-        spec: Vec<u8>,
         inputs: Vec<TaskRef>,
-        n_outputs: OutputId,
-        user_priority: Priority,
-        resources: ResourceRequest,
+        configuration: TaskConfiguration,
         keep: bool,
         observe: bool,
     ) -> Self {
         let mut flags = TaskFlags::empty();
-        log::debug!("New task {} {:?}", id, &resources);
+        log::debug!("New task {} {:?}", id, &configuration.resources);
         flags.set(TaskFlags::KEEP, keep);
         flags.set(TaskFlags::OBSERVE, observe);
         flags.set(TaskFlags::FRESH, true);
         Self::wrap(Task {
             id,
             inputs,
-            n_outputs,
             flags,
-            type_id,
-            spec,
-            user_priority,
             scheduler_priority: Default::default(),
-            resources,
             state: TaskRuntimeState::Waiting(WaitingInfo { unfinished_deps: 0 }),
             consumers: Default::default(),
             instance_id: 0,
