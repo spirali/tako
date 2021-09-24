@@ -32,6 +32,8 @@ pub struct Worker {
     pub load: WorkerLoad,
     pub resources: WorkerResources,
     pub flags: WorkerFlags,
+    // When the worker will be terminated
+    pub termination_time: Option<std::time::Instant>,
 
     // COLD DATA move it into a box (?)
     pub last_heartbeat: std::time::Instant,
@@ -144,14 +146,13 @@ impl Worker {
     }
 }
 
-//pub type WorkerRef = WrappedRcRefCell<Worker>;
-
 impl Worker {
     pub fn new(id: WorkerId, configuration: WorkerConfiguration) -> Self {
         let resources = WorkerResources::from_description(&configuration.resources);
         let now = std::time::Instant::now();
         Worker {
             id,
+            termination_time: configuration.time_limit.map(|duration| now + duration),
             configuration,
             resources,
             tasks: Default::default(),

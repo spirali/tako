@@ -131,6 +131,9 @@ pub struct TaskConfiguration {
     #[serde(default)]
     pub time_limit: Option<Duration>,
 
+    #[serde(default)]
+    pub : Option<Duration>,
+
     #[serde(with = "serde_bytes")]
     pub body: Vec<u8>,
 }
