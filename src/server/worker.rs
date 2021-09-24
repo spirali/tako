@@ -137,6 +137,14 @@ impl Worker {
         self.resources.is_capable_to_run(request)
     }
 
+    pub fn has_time_to_run(&self, time_request: std::time::Duration, now: std::time::Instant) -> bool {
+        if let Some(time) = self.termination_time {
+            now + time_request < time
+        } else {
+            true
+        }
+    }
+
     pub fn set_stopping_flag(&mut self, value: bool) {
         self.flags.set(WorkerFlags::STOPPING, value);
     }

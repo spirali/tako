@@ -39,6 +39,7 @@ fn choose_worker_for_task(
         if !worker.is_capable_to_run(&task.configuration.resources) {
             continue;
         }
+        if worker.has_time_to_run(&task)
         let c = task_transfer_cost(task, worker.id);
         match c.cmp(&costs) {
             Ordering::Less => {

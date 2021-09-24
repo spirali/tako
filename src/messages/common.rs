@@ -126,13 +126,13 @@ pub struct TaskConfiguration {
     pub resources: ResourceRequest,
 
     #[serde(default)]
+    pub time_request: Option<Duration>,
+
+    #[serde(default)]
     pub n_outputs: OutputId,
 
     #[serde(default)]
     pub time_limit: Option<Duration>,
-
-    #[serde(default)]
-    pub : Option<Duration>,
 
     #[serde(with = "serde_bytes")]
     pub body: Vec<u8>,
