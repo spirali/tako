@@ -17,8 +17,8 @@ use crate::messages::worker::{
 use crate::server::comm::CommSenderRef;
 use crate::server::core::CoreRef;
 use crate::server::reactor::{
-    on_new_worker, on_remove_worker, on_steal_response, on_task_error, on_task_finished,
-    on_task_running, on_tasks_transferred,
+    insert_worker_message_event, on_new_worker, on_remove_worker, on_steal_response, on_task_error,
+    on_task_finished, on_task_running, on_tasks_transferred,
 };
 use crate::server::worker::Worker;
 use crate::transfer::auth::{
@@ -244,6 +244,7 @@ async fn worker_rpc_loop(
     Ok(())
 }
 
+//todo: add event to the core
 pub async fn worker_receive_loop<
     Reader: Stream<Item = Result<BytesMut, std::io::Error>> + Unpin,
 >(
@@ -260,15 +261,18 @@ pub async fn worker_receive_loop<
         match message {
             FromWorkerMessage::TaskFinished(msg) => {
                 on_task_finished(&mut core, &mut *comm, worker_id, msg);
+                insert_worker_message_event(&mut core, FromWorkerMessage::TaskFinished(msg))
             }
             FromWorkerMessage::TaskRunning(msg) => {
                 on_task_running(&mut core, &mut *comm, worker_id, msg.id);
+                insert_worker_message_event(&mut core, FromWorkerMessage::TaskRunning(msg))
             }
             FromWorkerMessage::TaskFailed(msg) => {
                 on_task_error(&mut core, &mut *comm, worker_id, msg.id, msg.info);
             }
             FromWorkerMessage::DataDownloaded(msg) => {
-                on_tasks_transferred(&mut core, &mut *comm, worker_id, msg.id)
+                on_tasks_transferred(&mut core, &mut *comm, worker_id, msg.id);
+                insert_worker_message_event(&mut core, FromWorkerMessage::DataDownloaded(msg))
             }
             FromWorkerMessage::StealResponse(msg) => {
                 on_steal_response(&mut core, &mut *comm, worker_id, msg)

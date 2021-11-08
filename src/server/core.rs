@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use orion::aead::SecretKey;
 
@@ -7,6 +7,7 @@ use crate::common::resources::{GenericResourceId, ResourceRequest};
 use crate::common::trace::trace_task_remove;
 use crate::common::{Map, Set, WrappedRcRefCell};
 use crate::messages::gateway::ServerInfo;
+use crate::messages::worker::FromWorkerMessage;
 use crate::server::rpc::ConnectionDescriptor;
 use crate::server::task::{Task, TaskRef, TaskRuntimeState};
 use crate::server::worker::Worker;
@@ -37,6 +38,13 @@ pub struct Core {
     secret_key: Option<Arc<SecretKey>>,
 
     custom_conn_handler: Option<CustomConnectionHandler>,
+    event_queue: Vec<WorkerEvent<FromWorkerMessage>>,
+}
+
+pub struct WorkerEvent<T> {
+    pub message: T,
+    pub event_id: u32,
+    pub event_time: SystemTime,
 }
 
 pub type CoreRef = WrappedRcRefCell<Core>;
@@ -145,6 +153,10 @@ impl Core {
             .values()
             .map(|w| (w.id, w.configuration.listen_address.clone()))
             .collect()
+    }
+
+    pub fn get_event_queue_len(&self) -> u32 {
+        self.event_queue.len() as u32
     }
 
     #[inline]
@@ -359,6 +371,10 @@ impl Core {
 
     pub fn secret_key(&self) -> &Option<Arc<SecretKey>> {
         &self.secret_key
+    }
+
+    pub fn insert_worker_message_event(&mut self, event: WorkerEvent<FromWorkerMessage>) {
+        self.event_queue.push(event)
     }
 }
 

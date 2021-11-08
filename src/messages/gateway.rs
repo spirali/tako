@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::messages::common::{TaskConfiguration, TaskFailInfo, WorkerConfiguration};
-use crate::messages::worker::WorkerOverview;
+use crate::messages::worker::{FromWorkerMessage, ToWorkerMessage, WorkerOverview};
 use crate::{Priority, TaskId, WorkerId};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -62,12 +62,19 @@ pub enum FromGatewayMessage {
     CancelTasks(CancelTasks),
     GetTaskInfo(TaskInfoRequest),
     ServerInfo,
+    GetWorkerEvents(EventRequest),
     GetOverview(OverviewRequest),
     StopWorker(StopWorkerRequest),
 
     // Register names in the request (may be empty) and return ALL names
     // in message GenericResourceNames
     GetGenericResourceNames(GenericResourceNames),
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct EventRequest {
+    //todo: have filters to get events after id/timestamp
+    after_id: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -208,4 +215,11 @@ pub enum ToGatewayMessage {
     LostWorker(LostWorkerMessage),
     WorkerStopped,
     GenericResourceNames(GenericResourceNames),
+    WorkerEventsResponse(WorkerEvents),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WorkerEvents {
+    pub worker_message_events: Vec<FromWorkerMessage>,
+    pub to_worker_message_events: Vec<ToWorkerMessage>,
 }

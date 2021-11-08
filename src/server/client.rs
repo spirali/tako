@@ -8,7 +8,7 @@ use crate::common::rpc::forward_queue_to_sink_with_map;
 use crate::messages::gateway::{
     CancelTasksResponse, CollectedOverview, ErrorResponse, FromGatewayMessage,
     GenericResourceNames, NewTasksResponse, TaskInfo, TaskState, TaskUpdate, TasksInfoResponse,
-    ToGatewayMessage,
+    ToGatewayMessage, WorkerEvents,
 };
 use crate::messages::worker::{ToWorkerMessage, WorkerOverview};
 use crate::server::comm::{Comm, CommSenderRef};
@@ -232,6 +232,15 @@ pub async fn process_client_message(
             }
             let message = ToGatewayMessage::GenericResourceNames(GenericResourceNames {
                 resource_names: core.generic_resource_names().to_vec(),
+            });
+            assert!(client_sender.send(message).is_ok());
+            None
+        }
+        FromGatewayMessage::GetWorkerEvents(_) => {
+            //todo: get events after a particular id and return
+            let message = ToGatewayMessage::WorkerEventsResponse(WorkerEvents {
+                worker_message_events: vec![],
+                to_worker_message_events: vec![],
             });
             assert!(client_sender.send(message).is_ok());
             None

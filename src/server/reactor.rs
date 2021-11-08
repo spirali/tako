@@ -6,15 +6,16 @@ use crate::common::{Map, Set};
 use crate::messages::common::TaskFailInfo;
 use crate::messages::gateway::LostWorkerReason;
 use crate::messages::worker::{
-    NewWorkerMsg, StealResponse, StealResponseMsg, TaskFinishedMsg, TaskIdMsg, TaskIdsMsg,
-    ToWorkerMessage,
+    FromWorkerMessage, NewWorkerMsg, StealResponse, StealResponseMsg, TaskFinishedMsg, TaskIdMsg,
+    TaskIdsMsg, ToWorkerMessage,
 };
 use crate::server::comm::Comm;
-use crate::server::core::Core;
+use crate::server::core::{Core, WorkerEvent};
 use crate::server::task::{DataInfo, TaskRef, TaskRuntimeState};
 use crate::server::task::{FinishInfo, Task, WaitingInfo};
 use crate::server::worker::Worker;
 use crate::{TaskId, WorkerId};
+use std::time::SystemTime;
 
 pub fn on_new_worker(core: &mut Core, comm: &mut impl Comm, worker: Worker) {
     {
@@ -656,6 +657,14 @@ fn remove_task_if_possible(core: &mut Core, comm: &mut impl Comm, task: &mut Tas
         //comm.send_scheduler_message(ToSchedulerMessage::RemoveTask(task.id));
         //comm.send_client_task_removed(task.id);
     }
+}
+
+pub fn insert_worker_message_event(core: &mut Core, event: FromWorkerMessage) {
+    core.insert_worker_message_event(WorkerEvent {
+        message: event,
+        event_id: core.get_event_queue_len(),
+        event_time: SystemTime::now(),
+    });
 }
 
 #[cfg(test)]
